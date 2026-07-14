@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Override dark mode background to pure black */
+.dark {
+  --color-bg-primary: #000000;
+}
+
+/* Make all dark backgrounds pure black by overriding the Tailwind default */
+.dark body {
+  background-color: #000000;
+}
