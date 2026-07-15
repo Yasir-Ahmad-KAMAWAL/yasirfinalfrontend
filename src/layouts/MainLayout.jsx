@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import ThemeToggle from "../components/ThemeToggle";
 import GlobalSearch from "../components/GlobalSearch";
+import { ToastProvider } from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
 
 const getInitials = (name = "") =>
@@ -13,6 +14,7 @@ const MainLayout = () => {
   const navigate = useNavigate();
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen bg-slate-50 dark:bg-black transition-colors duration-300">
       <Sidebar />
 
@@ -48,6 +50,7 @@ const MainLayout = () => {
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 };
 

@@ -8,17 +8,22 @@ import {
   Settings,
   List,
   Plus,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useProjects } from "../context/ProjectsContext";
 import { getProjectTasksApi } from "../api/task.api";
+import { getUnreadCountApi } from "../api/message.api";
 
 const navItems = [
   { label: "My Issues", to: "/dashboard", icon: ListChecks, end: true },
   { label: "All Issues", to: "/dashboard/all-issues", icon: List },
   { label: "Projects", to: "/dashboard/projects", icon: FolderKanban },
   { label: "Board", to: "/dashboard/board", icon: Kanban },
+  { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
   { label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 },
+  { label: "Favorites", to: "/dashboard/favorites", icon: Star },
   { label: "Settings", to: "/dashboard/settings", icon: Settings },
 ];
 
@@ -45,6 +50,7 @@ const Sidebar = () => {
   const { user } = useAuth();
   const { projects, taskRefreshVersion } = useProjects();
   const [taskStats, setTaskStats] = useState({});
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
   const isCompanyAdmin = user?.isCompanyAdmin;
@@ -75,6 +81,29 @@ const Sidebar = () => {
     if (projects.length > 0) {
       loadStats();
     }
+
+    // Fetch unread message count
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await getUnreadCountApi();
+        setUnreadCount(res.data.data.count);
+      } catch {
+        // Silently fail
+      }
+    };
+    fetchUnreadCount();
+
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    // Listen for manual refresh events (e.g. when Messages page marks as read)
+    const handleRefresh = () => fetchUnreadCount();
+    window.addEventListener("refresh-message-count", handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("refresh-message-count", handleRefresh);
+    };
   }, [projects, taskRefreshVersion]);
 
   return (
@@ -228,8 +257,8 @@ const Sidebar = () => {
       </div>
       {/* Radar signal accent - bottom right glow */}
       <div className="absolute bottom-0 right-0 w-40 h-40 pointer-events-none bg-gradient-to-tl from-orange-500/5 via-orange-500/2 to-transparent dark:from-orange-500/8 dark:via-orange-500/3 dark:to-transparent rounded-full" />
-      {/* Subtle gradient overlay for depth */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-white/30 dark:to-black" />
+      {/* Subtle gradient overlay for depth - only on main content, not the bottom user area */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-white/30 dark:to-transparent" />
       {/* Logo + New Project button */}
       <div className="px-4 pt-5 pb-4 flex items-center justify-between">
         <svg width="150" height="43" viewBox="0 0 270 78" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-auto">
@@ -265,7 +294,12 @@ const Sidebar = () => {
           .map((item) => (
             <NavLink key={item.label} to={item.to} end={item.end} className={navLinkClasses}>
               <item.icon size={17} strokeWidth={2} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.label === "Messages" && unreadCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-orange-500 text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
       </nav>

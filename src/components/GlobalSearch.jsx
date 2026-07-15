@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Calendar, User, AlignLeft } from "lucide-react";
+import { Search, X, Calendar, User, AlignLeft, Star } from "lucide-react";
 import { getAllIssuesApi } from "../api/issues.api";
 import { updateTaskApi } from "../api/task.api";
 import { useAuth } from "../context/AuthContext";
 import { useProjects } from "../context/ProjectsContext";
+import { getFavoriteStatusApi, toggleFavoriteApi } from "../api/favorites.api";
+import { useToast } from "../components/Toast";
 
 const PRIORITY_STYLES = {
   high: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
@@ -142,11 +144,13 @@ const GlobalSearch = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { bumpTaskRefresh } = useProjects();
+  const { addToast } = useToast();
   const [query, setQuery] = useState("");
   const [allIssues, setAllIssues] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -165,6 +169,20 @@ const GlobalSearch = () => {
     };
     load();
   }, [user, loaded]);
+
+  // Load favorite status
+  useEffect(() => {
+    if (!user) return;
+    const loadFavorites = async () => {
+      try {
+        const res = await getFavoriteStatusApi();
+        setFavoriteIds(new Set(res.data.data || []));
+      } catch {
+        // ignore
+      }
+    };
+    loadFavorites();
+  }, [user]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -188,6 +206,27 @@ const GlobalSearch = () => {
         const projectMatch = task.projectName?.toLowerCase().includes(trimmed);
         return titleMatch || numberMatch || projectMatch;
       });
+
+  const handleToggleFavorite = async (e, taskId) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await toggleFavoriteApi(taskId);
+      const wasFavorited = favoriteIds.has(taskId);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(taskId)) {
+          next.delete(taskId);
+        } else {
+          next.add(taskId);
+        }
+        return next;
+      });
+      addToast(wasFavorited ? "Removed from favorites" : "Added to favorites");
+    } catch {
+      addToast("Failed to update favorite", "error");
+    }
+  };
 
   const handleSelectTask = (task) => {
     setSelectedTask(task);
@@ -239,24 +278,38 @@ const GlobalSearch = () => {
               filteredIssues.map((task) => {
                 const lineColor = STATUS_LINE_COLORS[task.status] || "bg-slate-400";
                 return (
-                  <button
-                    key={task._id}
-                    onClick={() => handleSelectTask(task)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-white/5 last:border-b-0 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors text-left"
-                  >
-                    <div className={`w-[3px] h-8 shrink-0 rounded-r ${lineColor}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                        {task.title}
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {getProjectInitials(task.projectName)}-{task.taskNumber} · {task.projectName}
-                      </p>
+                    <div
+                      key={task._id}
+                      className="flex items-center border-b border-slate-100 dark:border-white/5 last:border-b-0"
+                    >
+                      <button
+                        onClick={() => handleSelectTask(task)}
+                        className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors text-left"
+                      >
+                        <div className={`w-[3px] h-8 shrink-0 rounded-r ${lineColor}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                            {task.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {getProjectInitials(task.projectName)}-{task.taskNumber} · {task.projectName}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => handleToggleFavorite(e, task._id)}
+                          className="mr-1 shrink-0 transition-colors"
+                          title={favoriteIds.has(task._id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <Star
+                            size={14}
+                            className={favoriteIds.has(task._id) ? "text-yellow-500 fill-yellow-500" : "text-slate-300 dark:text-slate-600 hover:text-yellow-400"}
+                          />
+                        </button>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${PRIORITY_STYLES[task.priority]}`}>
+                          {task.priority}
+                        </span>
+                      </button>
                     </div>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${PRIORITY_STYLES[task.priority]}`}>
-                      {task.priority}
-                    </span>
-                  </button>
                 );
               })
             )}

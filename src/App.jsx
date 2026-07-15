@@ -5,9 +5,11 @@ import Signup from "./pages/Signup";
 import MainLayout from "./layouts/MainLayout";
 import MyIssues from "./pages/MyIssues";
 import AllIssues from "./pages/AllIssues";
+import Favorites from "./pages/Favorites";
 import Board from "./pages/Board";
 import Projects from "./pages/Projects";
 import Analytics from "./pages/Analytics";
+import Messages from "./pages/Messages";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,6 +38,8 @@ function App() {
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="favorites" element={<Favorites />} />
+        <Route path="messages" element={<Messages />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

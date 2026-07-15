@@ -6,7 +6,9 @@ import { getMyProjectsApi } from "../api/project.api";
 import { getProjectTasksApi, updateTaskApi } from "../api/task.api";
 import { createTaskApi } from "../api/task.api";
 import { getProjectMembersApi } from "../api/projectMember.api";
-import { X, Calendar, User, AlignLeft, Plus } from "lucide-react";
+import { X, Calendar, User, AlignLeft, Plus, Star } from "lucide-react";
+import { getFavoriteStatusApi, toggleFavoriteApi } from "../api/favorites.api";
+import { useToast } from "../components/Toast";
 
 const PRIORITY_STYLES = {
   high: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
@@ -277,7 +279,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400"
             >
-              <option value="">Select a project…</option>
+              <option value="">Select a project\u2026</option>
               {projects.map((p) => (
                 <option key={p._id} value={p._id}>{p.name}</option>
               ))}
@@ -315,7 +317,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
                 className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400"
                 disabled={!selectedProjectId}
               >
-                <option value="">{loadingMembers ? "Loading…" : !selectedProjectId ? "Select project first" : "Assign to…"}</option>
+                <option value="">{loadingMembers ? "Loading\u2026" : !selectedProjectId ? "Select project first" : "Assign to\u2026"}</option>
                 {members.map((m) => (
                   <option key={m._id} value={m.userId._id}>{m.userId.name}</option>
                 ))}
@@ -350,7 +352,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
               Cancel
             </button>
             <button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors">
-              {submitting ? "Creating…" : "Create Task"}
+              {submitting ? "Creating\u2026" : "Create Task"}
             </button>
           </div>
         </form>
@@ -363,11 +365,13 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
 const AllIssues = () => {
   const { user } = useAuth();
   const { projects, bumpTaskRefresh, taskRefreshVersion } = useProjects();
+  const { addToast } = useToast();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [selectedTask, setSelectedTask] = useState(null);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
 
   const isAdmin = user?.isCompanyAdmin;
   const isPrivileged = isAdmin || user?.isProjectLead;
@@ -405,6 +409,20 @@ const AllIssues = () => {
     loadTasks();
   }, [user, isAdmin, taskRefreshVersion]);
 
+  // Load favorite status
+  useEffect(() => {
+    if (!user) return;
+    const loadFavorites = async () => {
+      try {
+        const res = await getFavoriteStatusApi();
+        setFavoriteIds(new Set(res.data.data || []));
+      } catch {
+        // ignore
+      }
+    };
+    loadFavorites();
+  }, [user]);
+
   const stats = useMemo(() => {
     return {
       total: tasks.length,
@@ -421,6 +439,26 @@ const AllIssues = () => {
     setTasks((prev) =>
       prev.map((t) => (t._id === taskId ? { ...t, ...updates } : t))
     );
+  };
+
+  const handleToggleFavorite = async (e, taskId) => {
+    e.stopPropagation();
+    try {
+      await toggleFavoriteApi(taskId);
+      const wasFavorited = favoriteIds.has(taskId);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(taskId)) {
+          next.delete(taskId);
+        } else {
+          next.add(taskId);
+        }
+        return next;
+      });
+      addToast(wasFavorited ? "Removed from favorites" : "Added to favorites");
+    } catch {
+      addToast("Failed to update favorite", "error");
+    }
   };
 
   const refreshTasks = async () => {
@@ -461,14 +499,12 @@ const AllIssues = () => {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
             All Issues
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-            <span className="font-semibold text-green-600 dark:text-green-400">{stats.done}</span> done{' '}
-            <span className="text-slate-400">·</span>{' '}
-            <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.inProgress}</span> in progress{' '}
-            <span className="text-slate-400">·</span>{' '}
-            <span className="font-semibold">{stats.total}</span> total
-          </p>
-          {/* Progress bar: gradient from red → purple → indigo */}
+           <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+             <span className="font-semibold text-green-600 dark:text-green-400">{stats.done}</span> done{' · '}
+             <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.inProgress}</span> in progress{' · '}
+             <span className="font-semibold">{stats.total}</span> total
+           </p>
+          {/* Progress bar: gradient from red \u2192 purple \u2192 indigo */}
           <div className="max-w-[260px] h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
@@ -517,7 +553,7 @@ const AllIssues = () => {
         </div>
       </div>
 
-      {/* One single block — header tabs + issues list together inside the card */}
+      {/* One single block \u2014 header tabs + issues list together inside the card */}
       <div className="bg-white dark:bg-black border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden">
         {/* Tabs inside the block */}
         <div className="px-4 py-4">
@@ -552,13 +588,25 @@ const AllIssues = () => {
                 onClick={() => setSelectedTask(task)}
                 className="flex items-center pl-0 pr-5 py-2 border-b border-slate-100 dark:border-white/5 last:border-b-0 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer"
               >
-                {/* Straight status color line — full height vertical stripe with left margin */}
+                {/* Straight status color line \u2014 full height vertical stripe with left margin */}
                 <div className={`ml-3 w-[3px] self-stretch shrink-0 rounded-r ${lineColor}`} />
 
                 {/* Project initials + task number */}
                 <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 shrink-0 hidden md:block w-14 text-center">
                   {getProjectInitials(task.projectName)}-{task.taskNumber}
                 </span>
+
+                {/* Star icon */}
+                <button
+                  onClick={(e) => handleToggleFavorite(e, task._id)}
+                  className="mx-1 shrink-0 transition-colors"
+                  title={favoriteIds.has(task._id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star
+                    size={14}
+                    className={favoriteIds.has(task._id) ? "text-yellow-500 fill-yellow-500" : "text-slate-300 dark:text-slate-600 hover:text-yellow-400"}
+                  />
+                </button>
 
                 <p className="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate px-3">
                   {task.title}

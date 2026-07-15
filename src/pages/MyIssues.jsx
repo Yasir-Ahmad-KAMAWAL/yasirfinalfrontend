@@ -3,7 +3,9 @@ import { useAuth } from "../context/AuthContext";
 import { useProjects } from "../context/ProjectsContext";
 import { getMyProjectsApi } from "../api/project.api";
 import { getProjectTasksApi, updateTaskApi } from "../api/task.api";
-import { X, Calendar, User, AlignLeft, List } from "lucide-react";
+import { X, Calendar, User, AlignLeft, List, Star } from "lucide-react";
+import { getFavoriteStatusApi, toggleFavoriteApi } from "../api/favorites.api";
+import { useToast } from "../components/Toast";
 import { Navigate } from "react-router-dom";
 
 const PRIORITY_STYLES = {
@@ -195,10 +197,12 @@ const IssueDetailModal = ({ task, projectId, onClose, onUpdate, onBumpTaskRefres
 const MyIssues = () => {
   const { user } = useAuth();
   const { bumpTaskRefresh, taskRefreshVersion } = useProjects();
+  const { addToast } = useToast();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [selectedTask, setSelectedTask] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
 
   const isAdmin = user?.isCompanyAdmin;
   const isLead = user?.isProjectLead && !user?.isCompanyAdmin;
@@ -238,6 +242,17 @@ const MyIssues = () => {
     };
 
     loadTasks();
+
+    // Load favorite status
+    const loadFavorites = async () => {
+      try {
+        const res = await getFavoriteStatusApi();
+        setFavoriteIds(new Set(res.data.data || []));
+      } catch {
+        // ignore
+      }
+    };
+    loadFavorites();
   }, [user, isAdmin, isLead, taskRefreshVersion]);
 
   const stats = useMemo(() => {
@@ -256,6 +271,26 @@ const MyIssues = () => {
     setTasks((prev) =>
       prev.map((t) => (t._id === taskId ? { ...t, ...updates } : t))
     );
+  };
+
+  const handleToggleFavorite = async (e, taskId) => {
+    e.stopPropagation();
+    try {
+      await toggleFavoriteApi(taskId);
+      const wasFavorited = favoriteIds.has(taskId);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(taskId)) {
+          next.delete(taskId);
+        } else {
+          next.add(taskId);
+        }
+        return next;
+      });
+      addToast(wasFavorited ? "Removed from favorites" : "Added to favorites");
+    } catch {
+      addToast("Failed to update favorite", "error");
+    }
   };
 
   // Company admin — redirect to All Issues
@@ -362,6 +397,18 @@ const MyIssues = () => {
                 <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 shrink-0 hidden md:block w-14 text-center">
                   {getProjectInitials(task.projectName)}-{task.taskNumber}
                 </span>
+
+                {/* Star icon */}
+                <button
+                  onClick={(e) => handleToggleFavorite(e, task._id)}
+                  className="mx-1 shrink-0 transition-colors"
+                  title={favoriteIds.has(task._id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star
+                    size={14}
+                    className={favoriteIds.has(task._id) ? "text-yellow-500 fill-yellow-500" : "text-slate-300 dark:text-slate-600 hover:text-yellow-400"}
+                  />
+                </button>
 
                 <p className="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate px-3">
                   {task.title}
