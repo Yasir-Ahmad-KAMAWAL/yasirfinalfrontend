@@ -190,8 +190,8 @@ const Projects = () => {
               className="w-full text-left px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
             >
               {selectedMembers.length > 0
-                ? "Add more members…"
-                : "Choose team members to add to this project…"}
+                ? "Add more members"
+                : "Choose team members to add to this project"}
             </button>
           </div>
 

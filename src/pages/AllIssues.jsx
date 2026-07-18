@@ -185,7 +185,7 @@ const IssueDetailModal = ({ task, projectId, onClose, onUpdate, onBumpTaskRefres
                 disabled={saving || status === task.status}
                 className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
-                {saving ? "Saving\u2026" : "Save"}
+                {saving ? "Saving" : "Save"}
               </button>
             </div>
           </div>
@@ -279,7 +279,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400"
             >
-              <option value="">Select a project\u2026</option>
+              <option value="">Select a project</option>
               {projects.map((p) => (
                 <option key={p._id} value={p._id}>{p.name}</option>
               ))}
@@ -317,7 +317,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
                 className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400"
                 disabled={!selectedProjectId}
               >
-                <option value="">{loadingMembers ? "Loading\u2026" : !selectedProjectId ? "Select project first" : "Assign to\u2026"}</option>
+                <option value="">{loadingMembers ? "Loading" : !selectedProjectId ? "Select project first" : "Assign to"}</option>
                 {members.map((m) => (
                   <option key={m._id} value={m.userId._id}>{m.userId.name}</option>
                 ))}
@@ -352,7 +352,7 @@ const NewTaskModal = ({ projects, onClose, onCreateTask }) => {
               Cancel
             </button>
             <button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors">
-              {submitting ? "Creating\u2026" : "Create Task"}
+              {submitting ? "Creating" : "Create Task"}
             </button>
           </div>
         </form>

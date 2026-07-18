@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Trash2 } from "lucide-react";
 import UserPickerModal from "../components/UserPickerModal";
+import SubTaskList from "../components/SubTaskList";
 
 const PRIORITY_STYLES = {
   high: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
@@ -26,8 +27,9 @@ const getProjectInitials = (name = "") => {
 };
 
 // Full lead view: all members, all tasks grouped by member, assign/reassign,
-// add/remove members. Props are provided by ProjectDetailPage, which owns
-// all the data-fetching + API calls — this component is purely presentational.
+// add/remove members. Also supports sub-issues (sub-tasks) via SubTaskList.
+// Props are provided by ProjectDetailPage, which owns all the data-fetching
+// + API calls — this component is purely presentational.
 const ProjectLeadView = ({
   members,
   tasks,
@@ -44,7 +46,6 @@ const ProjectLeadView = ({
     description: "",
     assignedTo: "",
     priority: "medium",
-    dueDate: "",
   });
 
   const memberUserIds = members.map((m) => m.userId._id);
@@ -146,13 +147,13 @@ const ProjectLeadView = ({
             rows={2}
           className="px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400 resize-none"
           />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <select
               value={newTask.assignedTo}
               onChange={(e) => setNewTask((p) => ({ ...p, assignedTo: e.target.value }))}
               className="px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10"
             >
-              <option value="">Assign to…</option>
+              <option value="">Assign to</option>
               {members.map((m) => (
                 <option key={m.userId._id} value={m.userId._id}>
                   {m.userId.name}
@@ -168,12 +169,6 @@ const ProjectLeadView = ({
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
-            <input
-              type="date"
-              value={newTask.dueDate}
-              onChange={(e) => setNewTask((p) => ({ ...p, dueDate: e.target.value }))}
-              className="px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10"
-            />
           </div>
           <div className="flex justify-end gap-2">
             <button
@@ -212,52 +207,69 @@ const ProjectLeadView = ({
                 <p className="text-sm text-slate-400 p-4 text-center">No tasks assigned.</p>
               ) : (
                 memberTasks.map((task) => (
-                  <div
-                    key={task._id}
-                    className={`flex items-center gap-3 pl-0 pr-4 py-2 border-b border-slate-100 dark:border-white/5 last:border-b-0`}
-                  >
-                    {/* Straight status color line with left margin */}
-                    <div className={`ml-3 w-1 self-stretch shrink-0 ${STATUS_LINE[task.status]}`} />
+                  <div key={task._id}>
+                    <div className="flex items-center gap-3 pl-0 pr-4 py-2 border-b border-slate-100 dark:border-white/5">
+                      {/* Straight status color line with left margin */}
+                      <div className={`ml-3 w-1 self-stretch shrink-0 ${STATUS_LINE[task.status]}`} />
 
-                    <p className="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {task.title}
-                    </p>
+                      <p className="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">
+                        {task.title}
+                      </p>
 
-                    <span
-                      className={`text-xs font-semibold px-2 py-1 rounded-md shrink-0 ${PRIORITY_STYLES[task.priority]}`}
-                    >
-                      {task.priority}
-                    </span>
+                      {task.subTaskCount > 0 && (
+                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded shrink-0">
+                          {task.subTaskCount}
+                        </span>
+                      )}
 
-                    <select
-                      value={task.status}
-                      onChange={(e) => onUpdateTask(task._id, { status: e.target.value })}
-                      className="text-xs px-2 py-1.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 shrink-0"
-                    >
-                      <option value="todo">Todo</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="done">Done</option>
-                    </select>
+                      <span
+                        className={`text-xs font-semibold px-2 py-1 rounded-md shrink-0 ${PRIORITY_STYLES[task.priority]}`}
+                      >
+                        {task.priority}
+                      </span>
 
-                    <select
-                      value={task.assignedTo?._id}
-                      onChange={(e) => onUpdateTask(task._id, { assignedTo: e.target.value })}
-                      className="text-xs px-2 py-1.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 shrink-0"
-                    >
-                      {members.map((m) => (
-                        <option key={m.userId._id} value={m.userId._id}>
-                          {m.userId.name}
-                        </option>
-                      ))}
-                    </select>
+                      <select
+                        value={task.status}
+                        onChange={(e) => onUpdateTask(task._id, { status: e.target.value })}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 shrink-0"
+                      >
+                        <option value="todo">Todo</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="done">Done</option>
+                      </select>
 
-                    <button
-                      onClick={() => onDeleteTask(task._id)}
-                      className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
-                      aria-label="Delete task"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                      <select
+                        value={task.assignedTo?._id}
+                        onChange={(e) => onUpdateTask(task._id, { assignedTo: e.target.value })}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 shrink-0"
+                      >
+                        {members.map((m) => (
+                          <option key={m.userId._id} value={m.userId._id}>
+                            {m.userId.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={() => onDeleteTask(task._id)}
+                        className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
+                        aria-label="Delete task"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    {/* Sub-issues for this task */}
+                    <div className="pb-1 border-b border-slate-100 dark:border-white/5 last:border-b-0">
+                      <SubTaskList
+                        projectId={task.projectId}
+                        taskId={task._id}
+                        isLead={true}
+                        members={members}
+                        onUpdateTask={onUpdateTask}
+                        onSubTaskChange={() => {}}
+                      />
+                    </div>
                   </div>
                 ))
               )}

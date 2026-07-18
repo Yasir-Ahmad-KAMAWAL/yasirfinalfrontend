@@ -1,3 +1,5 @@
+import SubTaskList from "../components/SubTaskList";
+
 const PRIORITY_STYLES = {
   high: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
   medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400",
@@ -13,6 +15,7 @@ const STATUS_LINE = {
 // Member view: only sees tasks assigned to them on this project. No visibility
 // into other members' tasks or the full roster — matches the backend's
 // role-based filtering exactly (the API only ever returns their own tasks).
+// Sub-issues are viewable and their status can be updated.
 const ProjectMemberView = ({ tasks, onUpdateTask }) => {
   return (
     <div>
@@ -27,44 +30,61 @@ const ProjectMemberView = ({ tasks, onUpdateTask }) => {
           </p>
         ) : (
           tasks.map((task) => (
-            <div
-              key={task._id}
-              className={`flex items-center pl-0 pr-5 py-0.5 border-b border-slate-100 dark:border-white/5 last:border-b-0 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer`}
-            >
-              {/* Straight status color line — centered with extra left margin */}
-              <div className={`ml-5 w-[3px] h-7 self-center shrink-0 rounded-r ${STATUS_LINE[task.status]}`} />
-              <div className="flex-1 min-w-0 ml-3">
-                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                  {task.title}
-                </p>
-                {task.description && (
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
-                    {task.description}
+            <div key={task._id}>
+              <div className="flex items-center pl-0 pr-5 py-0.5 border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer">
+                {/* Straight status color line — centered with extra left margin */}
+                <div className={`ml-5 w-[3px] h-7 self-center shrink-0 rounded-r ${STATUS_LINE[task.status]}`} />
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                    {task.title}
                   </p>
+                  {task.description && (
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                      {task.description}
+                    </p>
+                  )}
+                </div>
+
+                {task.dueDate && (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 w-[100px] text-center shrink-0 hidden md:block">
+                    {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
                 )}
+
+                <span
+                  className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md w-[60px] text-center shrink-0 ${PRIORITY_STYLES[task.priority]}`}
+                >
+                  {task.priority}
+                </span>
+
+                {task.subTaskCount > 0 && (
+                  <span className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded shrink-0">
+                    {task.subTaskCount}
+                  </span>
+                )}
+
+                <select
+                  value={task.status}
+                  onChange={(e) => onUpdateTask(task._id, { status: e.target.value })}
+                  className="text-[11px] px-1.5 py-0.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 w-[80px] text-center shrink-0"
+                >
+                  <option value="todo">Todo</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
               </div>
 
-              {task.dueDate && (
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 w-[100px] text-center shrink-0 hidden md:block">
-                  {new Date(task.dueDate).toLocaleDateString()}
-                </span>
-              )}
-
-              <span
-                className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md w-[60px] text-center shrink-0 ${PRIORITY_STYLES[task.priority]}`}
-              >
-                {task.priority}
-              </span>
-
-              <select
-                value={task.status}
-                onChange={(e) => onUpdateTask(task._id, { status: e.target.value })}
-                className="text-[11px] px-1.5 py-0.5 rounded-lg bg-white dark:bg-black text-slate-700 dark:text-slate-300 outline-none border border-slate-200 dark:border-white/10 w-[80px] text-center shrink-0"
-              >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="done">Done</option>
-              </select>
+              {/* Sub-issues for this task - members can view and update status, but cannot create */}
+              <div className="pb-1 border-b border-slate-100 dark:border-white/5 last:border-b-0 pl-2">
+                <SubTaskList
+                  projectId={task.projectId}
+                  taskId={task._id}
+                  isLead={false}
+                  members={[]}
+                  onUpdateTask={onUpdateTask}
+                  onSubTaskChange={() => {}}
+                />
+              </div>
             </div>
           ))
         )}
