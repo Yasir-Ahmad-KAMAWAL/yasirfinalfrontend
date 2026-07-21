@@ -260,7 +260,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <Eye open={showPassword} />
@@ -284,10 +284,12 @@ export default function Login() {
                 />
                 Remember me
               </label>
-              <a href="/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
-                Forgot Password?
-              </a>
             </div> */}
+            <div className="flex justify-end mb-6">
+              <Link to="/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors cursor-pointer">
+                Forgot Password?
+              </Link>
+            </div>
 
             {/* Login button */}
             <button
@@ -331,7 +333,7 @@ export default function Login() {
             {/* Sign up */}
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Don't have an account?{" "}
-              <Link to="/signup" className="text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition-colors">
+              <Link to="/signup" className="text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition-colors cursor-pointer">
                 Sign Up
               </Link>
             </p>

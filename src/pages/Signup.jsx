@@ -4,6 +4,12 @@ import ThemeToggle from "../components/ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { signupApi, loginApi } from "../api/auth.api";
 
+const SECURITY_QUESTIONS = [
+  "What is your mother's maiden name?",
+  "What was the name of your first pet?",
+  "What city were you born in?",
+];
+
 /* ─── Logo ─────────────────────────────────────────────── */
 const Logo = ({ white = false }) => (
   <svg width="170" height="56" viewBox="0 4 192 70" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-auto w-[140px] sm:w-[160px]">
@@ -104,6 +110,8 @@ export default function Signup() {
     companyId: "",
     password: "",
     confirmPassword: "",
+    securityQuestion: SECURITY_QUESTIONS[0],
+    securityAnswer: "",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -143,6 +151,8 @@ export default function Signup() {
     else if (formData.password.length < 6) e.password = "Minimum 6 characters";
     if (!formData.confirmPassword) e.confirmPassword = "Please confirm your password";
     else if (formData.confirmPassword !== formData.password) e.confirmPassword = "Passwords do not match";
+    if (!formData.securityAnswer.trim()) e.securityAnswer = "Security answer is required";
+    else if (formData.securityAnswer.trim().length < 2) e.securityAnswer = "Answer must be at least 2 characters";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -157,6 +167,8 @@ export default function Signup() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        securityQuestion: formData.securityQuestion,
+        securityAnswer: formData.securityAnswer.trim(),
         ...(mode === "create"
           ? { companyName: formData.companyName }
           : { companyId: formData.companyId.trim() }),
@@ -245,7 +257,7 @@ export default function Signup() {
               <button
                 type="button"
                 onClick={() => setMode("create")}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors cursor-pointer ${
                   mode === "create"
                     ? "bg-white dark:bg-[#0D1526] text-slate-900 dark:text-white shadow-sm"
                     : "text-slate-500 dark:text-slate-400"
@@ -256,7 +268,7 @@ export default function Signup() {
               <button
                 type="button"
                 onClick={() => setMode("join")}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors cursor-pointer ${
                   mode === "join"
                     ? "bg-white dark:bg-[#0D1526] text-slate-900 dark:text-white shadow-sm"
                     : "text-slate-500 dark:text-slate-400"
@@ -322,7 +334,7 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   <Eye open={showPassword} />
@@ -336,7 +348,7 @@ export default function Signup() {
               )}
             </div>
 
-            <div className="mb-5">
+            <div className="mb-3.5">
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 tracking-wide uppercase">
                 Confirm Password
               </label>
@@ -350,7 +362,7 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   <Eye open={showConfirmPassword} />
@@ -362,6 +374,43 @@ export default function Signup() {
                   {errors.confirmPassword}
                 </p>
               )}
+            </div>
+
+            {/* Security Question */}
+            <div className="mb-3.5">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 tracking-wide uppercase">
+                Security Question
+              </label>
+              <select
+                name="securityQuestion"
+                value={formData.securityQuestion}
+                onChange={handleChange}
+                className={`${inputBase} ${errors.securityQuestion ? inputErr : inputOk}`}
+              >
+                {SECURITY_QUESTIONS.map((q, i) => (
+                  <option key={i} value={q}>{q}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 tracking-wide uppercase">
+                Security Answer
+              </label>
+              <input
+                type="text" name="securityAnswer" value={formData.securityAnswer}
+                onChange={handleChange} placeholder="Your answer"
+                className={`${inputBase} ${errors.securityAnswer ? inputErr : inputOk}`}
+              />
+              {errors.securityAnswer && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                  {errors.securityAnswer}
+                </p>
+              )}
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                This will be used to reset your password if you forget it.
+              </p>
             </div>
 
             <button
@@ -381,7 +430,7 @@ export default function Signup() {
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Already have an account?{" "}
-              <Link to="/login" className="text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition-colors">
+              <Link to="/login" className="text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold transition-colors cursor-pointer">
                 Log In
               </Link>
             </p>

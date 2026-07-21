@@ -43,6 +43,7 @@ const Projects = () => {
   const [selectedLead, setSelectedLead] = useState(null);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [error, setError] = useState("");
+  const [nameError, setNameError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const isCompanyAdmin = user?.isCompanyAdmin;
 
@@ -62,11 +63,27 @@ const Projects = () => {
     return "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400";
   };
 
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setForm((p) => ({ ...p, name: value }));
+    // Validate: if the trimmed value is not empty and contains ONLY numbers
+    if (value.trim() && /^\d+$/.test(value.trim())) {
+      setNameError("Only numbers are not allowed for the project name.");
+    } else {
+      setNameError("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNameError("");
     if (!form.name.trim()) {
       setError("Project name is required.");
+      return;
+    }
+    if (/^\d+$/.test(form.name.trim())) {
+      setError("Only numbers are not allowed for the project name.");
       return;
     }
     if (!selectedLead) {
@@ -136,10 +153,20 @@ const Projects = () => {
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              onChange={handleNameChange}
               placeholder="e.g. Client Billing Portal"
-              className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border border-slate-200 dark:border-white/10 focus:border-blue-400"
+              className={`w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-black text-slate-800 dark:text-slate-200 outline-none border transition-colors ${
+                nameError
+                  ? "border-red-500 dark:border-red-500 focus:border-red-500"
+                  : "border-slate-200 dark:border-white/10 focus:border-blue-400"
+              }`}
             />
+            {nameError && (
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                <svg className="w-3 h-3 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                {nameError}
+              </p>
+            )}
           </div>
 
           <div>

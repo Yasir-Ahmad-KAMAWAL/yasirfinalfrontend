@@ -99,8 +99,8 @@ const IntroductionPage = () => {
         {/* Mobile Hamburger */}
         <div className="md:hidden flex items-center gap-2">
           <ThemeToggle />
-          <button
-            className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+            <button
+            className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
